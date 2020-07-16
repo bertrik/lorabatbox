@@ -187,13 +187,6 @@ static void onEventCallback(void *user, ev_t ev)
         setLoraStatus("REJOIN failed!");
         break;
     case EV_TXCOMPLETE:
-        if (LMIC.txrxFlags & TXRX_ACK)
-            Serial.println("Received ack");
-        if (LMIC.dataLen) {
-            Serial.print("Received ");
-            Serial.print(LMIC.dataLen);
-            Serial.println(" bytes of payload");
-        }
         setLoraStatus("%08X-%d", LMIC.devaddr, LMIC.seqnoUp);
         break;
     case EV_TXSTART:
@@ -210,6 +203,28 @@ static void onEventCallback(void *user, ev_t ev)
         Serial.println((unsigned) ev);
         break;
     }
+}
+
+static void onReceiveCallback(void *pUserData, uint8_t port, const uint8_t *pMessage, size_t nMessage)
+{
+    printf("Incoming data on port %d: %d bytes\n", port, nMessage);
+
+    if (nMessage >= 8) {
+        uint32_t t = gettime();
+        printf("time = %u\n", t);
+
+        // decode time offset
+        const uint8_t *p = pMessage;
+        int32_t offset = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
+        int32_t seq = (p[4] << 24) | (p[5] << 16) | (p[6] << 8) | p[7];
+        if (seq > time_seq) {
+            time_seq = seq;
+            printf("seq=%u, offset=%u\n", seq, offset);
+            adjtime(offset);
+        }           
+    }
+    uint32_t t = gettime();
+    printf("time = %u\n", t);
 }
 
 static void send_message(void)
@@ -301,6 +316,7 @@ void setup(void)
     os_init();
     LMIC_reset();
     LMIC_registerEventCb(onEventCallback, NULL);
+    LMIC_registerRxMessageCb(onReceiveCallback, NULL);
 
     EEPROM.begin(512);
     if (otaa_restore()) {
