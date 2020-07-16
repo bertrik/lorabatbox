@@ -45,7 +45,6 @@ typedef struct {
     u4_t channelFreq[MAX_CHANNELS];
     u2_t channelDrMap[MAX_CHANNELS];
     u4_t channelDlFreq[MAX_CHANNELS];
-    band_t bands[MAX_BANDS];
     u2_t channelMap;
 
     char magic[8];
@@ -115,7 +114,6 @@ static void otaa_save(void)
     memcpy(otaa_data.channelFreq, LMIC.channelFreq, sizeof(otaa_data.channelFreq));
     memcpy(otaa_data.channelDrMap, LMIC.channelDrMap, sizeof(otaa_data.channelDrMap));
     memcpy(otaa_data.channelDlFreq, LMIC.channelDlFreq, sizeof(otaa_data.channelDlFreq));
-    memcpy(otaa_data.bands, LMIC.bands, sizeof(otaa_data.bands));
     otaa_data.channelMap = LMIC.channelMap;
 
     strcpy(otaa_data.magic, OTAA_MAGIC);
@@ -139,7 +137,6 @@ static bool otaa_restore(void)
     memcpy(LMIC.channelFreq, otaa_data.channelFreq, sizeof(LMIC.channelFreq));
     memcpy(LMIC.channelDrMap, otaa_data.channelDrMap, sizeof(LMIC.channelDrMap));
     memcpy(LMIC.channelDlFreq, otaa_data.channelDlFreq, sizeof(LMIC.channelDlFreq));
-    memcpy(LMIC.bands, otaa_data.bands, sizeof(LMIC.bands));
     LMIC.channelMap = otaa_data.channelMap;
 
     return true;
