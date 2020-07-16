@@ -9,7 +9,10 @@
 
 #include <SPI.h>
 #include <SSD1306.h>
+
 #include "soc/efuse_reg.h"
+#include "soc/rtc.h"
+
 #include "HardwareSerial.h"
 #include "EEPROM.h"
 
@@ -69,6 +72,27 @@ const lmic_pinmap lmic_pins = *Arduino_LMIC::GetPinmap_ThisBoard();
 static uint8_t deveui[8];
 static SSD1306 display(OLED_I2C_ADDR, PIN_OLED_SDA, PIN_OLED_SCL);
 static screen_t screen;
+
+static uint32_t time_offset = 0;
+static uint32_t time_seq = 0;
+
+static void inittime(void)
+{
+    rtc_clk_32k_bootstrap(1024);
+    rtc_clk_32k_enable(true);
+    rtc_clk_slow_freq_set(RTC_SLOW_FREQ_32K_XTAL);
+}
+
+static void adjtime(uint32_t t)
+{
+    time_offset += t;
+}
+
+static uint32_t gettime(void)
+{
+    uint64_t rtc = rtc_time_get() / 32768;
+    return time_offset + rtc;
+}
 
 // This should also be in little endian format, see above.
 void os_getDevEui(u1_t * buf)
@@ -269,6 +293,9 @@ void setup(void)
     snprintf(screen.loraDevEui, sizeof(screen.loraDevEui),
              "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X", deveui[0], deveui[1], deveui[2], deveui[3],
              deveui[4], deveui[5], deveui[6], deveui[7]);
+
+    // RTC
+    inittime();
 
     // LMIC init
     os_init();
